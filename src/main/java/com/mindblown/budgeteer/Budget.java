@@ -64,22 +64,35 @@ public class Budget {
         }
     }
 
-    public void recordTransaction(Date date, float amount, String recStorage, String description, String category) {
+    public String recordTransaction(Date date, float amount, String recStorage, String description, String category) {
         Storage recS = getStorage(recStorage);
+        if(recS == null){
+            return "Error! Receiving Storage '" + recStorage + "' not registered in Budget.\n"
+                    + "Register with command 'new storage <storage name> [storage inital amount]'";
+        }
         Transaction t = new Transaction(date, amount, recS, description);
         recS.transact(amount);
         addTransaction(t);
         recordCategoryTransaction(category, amount);
+        return "";
     }
     
-    public void recordTransfer(Date date, float amount, String recStorage, String sendStorage, String description){
+    public String recordTransfer(Date date, float amount, String recStorage, String sendStorage, String description){
         assert amount >= 0;
         Storage recS = getStorage(recStorage);
         Storage sendS = getStorage(sendStorage);
+        if(recS == null){
+            return "Error! Receiving Storage '" + recStorage + "' not registered in Budget.\n"
+                    + "Register with command 'new storage <storage name> [storage inital amount]'";
+        } else if(sendS == null){
+            return "Error! Sending Storage '" + sendStorage + "' not registered in Budget.\n"
+                    + "Register with command 'new storage <storage name> [storage inital amount]'";
+        }
         Transaction t = new Transaction(date, amount, recS, sendS, description);
         recS.transact(amount);
         sendS.transact(-1f * amount);
         addTransaction(t);
+        return "";
     }
     
     private void addTransaction(Transaction t){
@@ -94,10 +107,18 @@ public class Budget {
     private Storage getStorage(String name){
         int stoIdx = ArrayListUtil.sortedIndexOf(storages, new Storage(name));
         if(stoIdx < 0){
-            stoIdx = ArrayListUtil.translateIndex(stoIdx);
-            storages.add(stoIdx, new Storage(name));
+            return null;
         }
         return storages.get(stoIdx);
+    }
+    
+    public String addStorage(String storageName, float storageAmount){
+        int stoIdx = ArrayListUtil.sortedIndexOf(storages, new Storage(storageName));
+        if(stoIdx < 0){
+            storages.add(ArrayListUtil.translateIndex(stoIdx), new Storage(storageName, storageAmount));
+            return "";
+        }
+        return "Error! Storage '" + storageName + "' already exists";
     }
 
     private class Transaction implements Comparable<Transaction> {
